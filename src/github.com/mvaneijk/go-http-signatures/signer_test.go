@@ -1,4 +1,4 @@
-package httpsignatures
+package httpsignatures_test
 
 import (
 	"fmt"
@@ -6,16 +6,18 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/mvaneijk/go-http-signatures"
 )
 
 var (
 	// DefaultSha1Signer will sign requests with date using the SHA1 algorithm.
 	// Users are encouraged to create their own signer with the headers they require.
-	DefaultSha1Signer = NewSigner("hmac-sha1")
+	DefaultSha1Signer = httpsignatures.NewSigner("hmac-sha1")
 
 	// DefaultSha256Signer will sign requests with date using the SHA256 algorithm.
 	// Users are encouraged to create their own signer with the headers they require.
-	DefaultSha256Signer = NewSigner("hmac-sha256")
+	DefaultSha256Signer = httpsignatures.NewSigner("hmac-sha256")
 )
 
 const (
@@ -43,12 +45,12 @@ func TestSignSha1(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read Signature header from request and verify fields
-	var s SignatureParameters
+	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
 	assert.Equal(t, testKeyID, s.KeyID)
 	assert.Equal(t, algorithmHmacSha1, s.Algorithm)
-	assert.Equal(t, HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 	assert.Equal(t,
 		"06tbjUif0/069JeDM7gWFUOjz04=",
 		s.Signature,
@@ -67,7 +69,7 @@ func TestSignSha256(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read Signature header from request and verify fields
-	var s SignatureParameters
+	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
 	assert.Equal(t, testKeyID, s.KeyID)
@@ -92,7 +94,7 @@ func TestValidEd25119RequestIsValid(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read Signature header from request and verify fields
-	var s SignatureParameters
+	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
 	assert.Equal(t, ed25519TestPublicKey, s.KeyID)
@@ -116,7 +118,7 @@ func TestSignSha256OmitHeaderLeadingTrailingWhitespace(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read Signature header from request and verify fields
-	var s SignatureParameters
+	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
 	assert.Equal(t, HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
@@ -140,7 +142,7 @@ func TestSignSha256DoubleHeaderField(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Read Signature header from request and verify fields
-	var s SignatureParameters
+	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
 	assert.Equal(t, HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT",

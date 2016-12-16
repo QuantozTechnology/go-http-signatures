@@ -1,10 +1,11 @@
 language: go
-
 go:
   - 1.6
   - 1.7
   - master
 
 install:
-  - go get github.com/stretchr/testify/assert
-  - go get github.com/agl/ed25519
+  - go get github.com/constabulary/gb/...
+script:
+  - gb build
+  - gb test

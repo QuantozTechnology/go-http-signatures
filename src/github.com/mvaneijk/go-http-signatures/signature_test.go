@@ -7,6 +7,10 @@ import (
 	"testing"
 )
 
+const (
+	testDate       = "Thu, 05 Jan 2012 21:31:40 GMT"
+)
+
 // Signing
 // Test Signature String Config Parser
 func TestConfigParserMissingAlgorithmShouldFail(t *testing.T) {
