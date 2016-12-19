@@ -5,8 +5,7 @@ go:
   - master
 
 install:
-  - go get github.com/constabulary/gb/...
+  - go get golang.org/x/tools/cmd/goimports
 script:
-  - gb vendor restore
-  - gb build
-  - gb test
+  - go build
+  - go test
