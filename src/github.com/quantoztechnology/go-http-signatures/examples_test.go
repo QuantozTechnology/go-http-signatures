@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/mvaneijk/go-http-signatures"
+	"github.com/quantoztechnology/go-http-signatures"
 )
 
 func Example_signing() {

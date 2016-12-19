@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mvaneijk/go-http-signatures"
+	"github.com/quantoztechnology/go-http-signatures"
 )
 
 var (
