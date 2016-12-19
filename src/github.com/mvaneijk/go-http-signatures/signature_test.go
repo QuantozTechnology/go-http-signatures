@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	testDate       = "Thu, 05 Jan 2012 21:31:40 GMT"
+	testDate = "Thu, 05 Jan 2012 21:31:40 GMT"
 )
 
 // Signing

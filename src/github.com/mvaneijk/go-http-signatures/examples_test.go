@@ -49,7 +49,8 @@ func Example_verification() {
 			return key, nil
 		}
 
-		_, err := httpsignatures.VerifyRequest(r, keyLookUp, 300,
+		allowedClockSkew := 300
+		_, err := httpsignatures.VerifyRequest(r, keyLookUp, allowedClockSkew, []string{httpsignatures.AlgorithmEd25519},
 			httpsignatures.HeaderRequestTarget)
 
 		if err != nil {
