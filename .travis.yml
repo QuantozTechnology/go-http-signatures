@@ -7,5 +7,6 @@ go:
 install:
   - go get github.com/constabulary/gb/...
 script:
+  - gb vendor restore
   - gb build
   - gb test

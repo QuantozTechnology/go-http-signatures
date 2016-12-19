@@ -60,14 +60,27 @@ func (s signer) createHTTPSignatureString(r *http.Request, keyID string, keyB64 
 }
 
 // VerifyRequest verifies the signature added to the request and returns true if it is OK
-func VerifyRequest(r *http.Request, keyLookUp func(keyID string) (string, error), allowedClockSkew int, headers ...string) (bool, error) {
+func VerifyRequest(r *http.Request, keyLookUp func(keyID string) (string, error), allowedClockSkew int,
+	allowedAlgorithms []string, requiredHeaders ...string) (bool, error) {
+
 	sig := SignatureParameters{}
 
 	if err := sig.FromRequest(r); err != nil {
 		return false, err
 	}
 
-	for _, header := range headers {
+	isAlgorithmAllowed := false
+	for _, algorithm := range allowedAlgorithms {
+		if sig.Algorithm.Name == algorithm {
+			isAlgorithmAllowed = true
+			break
+		}
+	}
+	if !isAlgorithmAllowed {
+		return false, errors.New(ErrorAlgorithmNotAllowed)
+	}
+
+	for _, header := range requiredHeaders {
 		if sig.Headers[header] == "" {
 			return false, errors.New(ErrorRequiredHeaderNotInHeaderList)
 		}

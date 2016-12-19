@@ -49,6 +49,6 @@ func Verify(privateKey *[]byte, message []byte, hashFunc func() hash.Hash, sig *
 	if bytes.Equal(*calcSign, *sig) {
 		return true, nil
 	} else {
-		return false, errors.New(ErrorSignatureDdoNotMatch)
+		return false, errors.New(ErrorSignaturesDoNotMatch)
 	}
 }
