@@ -92,7 +92,7 @@ func (s *SignatureParameters) ParseRequest(r *http.Request) error {
 				return err
 			}
 		case "host":
-			if host := r.URL.Host; host != "" {
+			if host := r.Host; host != "" {
 				s.Headers[header] = strings.TrimSpace(host)
 			} else {
 				return errors.New(ErrorMissingRequiredHeader + " 'host'")

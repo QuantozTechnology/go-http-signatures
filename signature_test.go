@@ -17,12 +17,16 @@ func TestConfigParserMissingAlgorithmShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromConfig("Test", "", nil)
 	assert.EqualError(t, err, ErrorNoAlgorithmConfigured)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusInternalServerError, httpErr)
 }
 
 func TestConfigParserMissingKeyIdShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromConfig("", "hmac-sha256", nil)
 	assert.EqualError(t, err, ErrorNoKeyIDConfigured)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusInternalServerError, httpErr)
 }
 
 func TestConfigParserNotRequiredDateHeader(t *testing.T) {
@@ -53,6 +57,8 @@ func TestConfigParserMissingDateHeader(t *testing.T) {
 	}
 	err = s.ParseRequest(r) // it is not okay to have no date header when required
 	assert.EqualError(t, err, ErrorMissingRequiredHeader+" 'date'")
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 // Verification
@@ -74,6 +80,8 @@ func TestRequestParserMissingSignatureShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromRequest(r)
 	assert.EqualError(t, err, ErrorMissingSignatureParameterSignature)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestRequestParserMissingAlgorithmShouldFail(t *testing.T) {
@@ -93,6 +101,8 @@ func TestRequestParserMissingAlgorithmShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromRequest(r)
 	assert.EqualError(t, err, ErrorMissingSignatureParameterAlgorithm)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestRequestParserMissingKeyIdShouldFail(t *testing.T) {
@@ -112,6 +122,8 @@ func TestRequestParserMissingKeyIdShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromRequest(r)
 	assert.EqualError(t, err, ErrorMissingSignatureParameterKeyId)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestRequestParserDualHeaderShouldPickLastOne(t *testing.T) {
@@ -143,6 +155,7 @@ func TestRequestParserMissingDateHeader(t *testing.T) {
 			"Authorization": []string{authHeader},
 		},
 		Method: http.MethodPost,
+		Host:   "example.com",
 		URL: &url.URL{
 			Host: "example.com",
 			Path: "/foo?param=value&pet=dog",
@@ -166,6 +179,7 @@ func TestRequestParserInvalidKeyShouldBeIgnored(t *testing.T) {
 			"Authorization": []string{authHeader},
 		},
 		Method: http.MethodPost,
+		Host:   "example.com",
 		URL: &url.URL{
 			Host: "example.com",
 			Path: "/foo?param=value&pet=dog",
@@ -190,6 +204,7 @@ func TestRequestParserLoadHeaderMissingDateHeader(t *testing.T) {
 			"Authorization": []string{DefaultTestAuthHeader},
 		},
 		Method: http.MethodPost,
+		Host:   "example.com",
 		URL: &url.URL{
 			Host: "example.com",
 			Path: "/foo?param=value&pet=dog",
@@ -199,6 +214,8 @@ func TestRequestParserLoadHeaderMissingDateHeader(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromRequest(r) // the date header will be implicitly required
 	assert.EqualError(t, err, ErrorMissingRequiredHeader+" 'date'")
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 // Test Parse SignatureParameters from Request
@@ -212,6 +229,8 @@ func TestParseRequestWithNoSignatureShouldFail(t *testing.T) {
 	var s SignatureParameters
 	err := s.FromRequest(r)
 	assert.EqualError(t, err, ErrorNoSignatureHeaderFoundInRequest)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestParseRequestWithNoHostShouldFail(t *testing.T) {
@@ -225,6 +244,8 @@ func TestParseRequestWithNoHostShouldFail(t *testing.T) {
 
 	_, err := requestTargetLine(r)
 	assert.EqualError(t, err, ErrorURLNotInRequest)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestParseRequestWithNoMethodShouldFail(t *testing.T) {
@@ -233,6 +254,7 @@ func TestParseRequestWithNoMethodShouldFail(t *testing.T) {
 			"Date":          []string{testDate},
 			"Authorization": []string{DefaultTestAuthHeader},
 		},
+		Host: "example.com",
 		URL: &url.URL{
 			Host: "example.com",
 			Path: "/foo?param=value&pet=dog",
@@ -241,4 +263,6 @@ func TestParseRequestWithNoMethodShouldFail(t *testing.T) {
 
 	_, err := requestTargetLine(r)
 	assert.EqualError(t, err, ErrorMethodNotInRequest)
+	httpErr, _ := ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
