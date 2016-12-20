@@ -158,6 +158,8 @@ func TestSignWithMissingDateHeader(t *testing.T) {
 
 	err := DefaultSha1Signer.AuthRequest(r, testKeyID, testKey)
 	assert.EqualError(t, err, httpsignatures.ErrorMissingRequiredHeader+" 'date'")
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestSignWithMissingHeader(t *testing.T) {
@@ -171,6 +173,8 @@ func TestSignWithMissingHeader(t *testing.T) {
 
 	err := s.SignRequest(r, testKeyID, testKey)
 	assert.EqualError(t, err, httpsignatures.ErrorMissingRequiredHeader+" 'foo'")
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 // Verifying
@@ -204,6 +208,8 @@ func TestValidRequestHasRequiredAlgorithm(t *testing.T) {
 	res, err := httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha1})
 	assert.False(t, res)
 	assert.EqualError(t, err, httpsignatures.ErrorAlgorithmNotAllowed)
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 
 	res, err = httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha1, httpsignatures.AlgorithmHmacSha256})
 	assert.True(t, res)
@@ -224,6 +230,8 @@ func TestNotValidIfRequestHeadersChange(t *testing.T) {
 	res, err := httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha256})
 	assert.False(t, res)
 	assert.EqualError(t, err, httpsignatures.ErrorSignaturesDoNotMatch)
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 }
 
 func TestNotValidIfClockSkewExceeded(t *testing.T) {
@@ -243,9 +251,13 @@ func TestNotValidIfClockSkewExceeded(t *testing.T) {
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, allowedClockSkew-1, []string{httpsignatures.AlgorithmHmacSha256})
 	assert.EqualError(t, err, httpsignatures.ErrorAllowedClockskewExceeded)
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, 0, []string{httpsignatures.AlgorithmHmacSha256})
 	assert.EqualError(t, err, httpsignatures.ErrorYouProbablyMisconfiguredAllowedClockSkew)
+	httpErr, _ = httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusInternalServerError, httpErr)
 }
 
 func TestVerifyRequiredHeaderList(t *testing.T) {
@@ -259,6 +271,8 @@ func TestVerifyRequiredHeaderList(t *testing.T) {
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha256}, "(request-target)")
 	assert.EqualError(t, err, httpsignatures.ErrorRequiredHeaderNotInHeaderList)
+	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
+	assert.Equal(t, http.StatusBadRequest, httpErr)
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha256}, "date")
 	assert.Nil(t, err)

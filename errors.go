@@ -2,6 +2,7 @@ package httpsignatures
 
 import (
 	"net/http"
+	"strings"
 )
 
 var (
@@ -24,40 +25,40 @@ var (
 )
 
 func ErrorToHTTPCode(errString string) (int, string) {
-	switch errString {
-	case ErrorNoAlgorithmConfigured:
+	switch {
+	case strings.HasPrefix(errString, ErrorNoAlgorithmConfigured):
 		return http.StatusInternalServerError, ErrorNoAlgorithmConfigured
-	case ErrorNoKeyIDConfigured:
+	case strings.HasPrefix(errString, ErrorNoKeyIDConfigured):
 		return http.StatusInternalServerError, ErrorNoKeyIDConfigured
-	case ErrorNoHeadersConfigLoaded:
+	case strings.HasPrefix(errString, ErrorNoHeadersConfigLoaded):
 		return http.StatusInternalServerError, ErrorNoHeadersConfigLoaded
-	case ErrorYouProbablyMisconfiguredAllowedClockSkew:
+	case strings.HasPrefix(errString, ErrorYouProbablyMisconfiguredAllowedClockSkew):
 		return http.StatusInternalServerError, ErrorYouProbablyMisconfiguredAllowedClockSkew
-	case ErrorMissingRequiredHeader:
+	case strings.HasPrefix(errString, ErrorMissingRequiredHeader):
 		return http.StatusBadRequest, ErrorMissingRequiredHeader
-	case ErrorMissingSignatureParameterSignature:
+	case strings.HasPrefix(errString, ErrorMissingSignatureParameterSignature):
 		return http.StatusBadRequest, ErrorMissingSignatureParameterSignature
-	case ErrorMissingSignatureParameterAlgorithm:
+	case strings.HasPrefix(errString, ErrorMissingSignatureParameterAlgorithm):
 		return http.StatusBadRequest, ErrorMissingSignatureParameterAlgorithm
-	case ErrorMissingSignatureParameterKeyId:
+	case strings.HasPrefix(errString, ErrorMissingSignatureParameterKeyId):
 		return http.StatusBadRequest, ErrorMissingSignatureParameterKeyId
-	case ErrorNoSignatureHeaderFoundInRequest:
+	case strings.HasPrefix(errString, ErrorNoSignatureHeaderFoundInRequest):
 		return http.StatusBadRequest, ErrorNoSignatureHeaderFoundInRequest
-	case ErrorURLNotInRequest:
+	case strings.HasPrefix(errString, ErrorURLNotInRequest):
 		return http.StatusBadRequest, ErrorURLNotInRequest
-	case ErrorMethodNotInRequest:
+	case strings.HasPrefix(errString, ErrorMethodNotInRequest):
 		return http.StatusBadRequest, ErrorMethodNotInRequest
-	case ErrorSignaturesDoNotMatch:
+	case strings.HasPrefix(errString, ErrorSignaturesDoNotMatch):
 		return http.StatusBadRequest, ErrorSignaturesDoNotMatch
-	case ErrorAllowedClockskewExceeded:
+	case strings.HasPrefix(errString, ErrorAllowedClockskewExceeded):
 		return http.StatusBadRequest, ErrorAllowedClockskewExceeded
-	case ErrorRequiredHeaderNotInHeaderList:
+	case strings.HasPrefix(errString, ErrorRequiredHeaderNotInHeaderList):
 		return http.StatusBadRequest, ErrorRequiredHeaderNotInHeaderList
-	case ErrorDateHeaderIsMissingForClockSkewComparison:
+	case strings.HasPrefix(errString, ErrorDateHeaderIsMissingForClockSkewComparison):
 		return http.StatusBadRequest, ErrorDateHeaderIsMissingForClockSkewComparison
-	case ErrorAlgorithmNotAllowed:
+	case strings.HasPrefix(errString, ErrorAlgorithmNotAllowed):
 		return http.StatusBadRequest, ErrorAlgorithmNotAllowed
 	default:
-		return http.StatusInternalServerError, "UnknownError"
+		return http.StatusInternalServerError, errString
 	}
 }
