@@ -82,7 +82,7 @@ func VerifyRequest(r *http.Request, keyLookUp func(keyID string) (string, error)
 
 	for _, header := range requiredHeaders {
 		if sig.Headers[header] == "" {
-			return false, errors.New(ErrorRequiredHeaderNotInHeaderList)
+			return false, errors.New(ErrorRequiredHeaderNotInHeaderList + ": '" + header + "'")
 		}
 	}
 

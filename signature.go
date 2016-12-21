@@ -12,10 +12,11 @@ import (
 )
 
 type SignatureParameters struct {
-	KeyID     string
-	Algorithm *Algorithm
-	Headers   HeaderList
-	Signature string
+	KeyID      string
+	Algorithm  *Algorithm
+	Headers    HeaderValues
+	HeaderList []string
+	Signature  string
 }
 
 const (
@@ -66,11 +67,12 @@ func (s *SignatureParameters) FromConfig(keyId string, algorithm string, headers
 	s.Algorithm = alg
 
 	if len(headers) == 0 {
-		s.Headers = HeaderList{"date": ""}
+		s.HeaderList = []string{"date"}
+		s.Headers = HeaderValues{}
 	} else {
-		s.Headers = HeaderList{}
+		s.Headers = HeaderValues{}
 		for _, header := range headers {
-			s.Headers[header] = ""
+			s.HeaderList = append(s.HeaderList, header)
 		}
 	}
 
@@ -80,10 +82,13 @@ func (s *SignatureParameters) FromConfig(keyId string, algorithm string, headers
 // ParseRequest extracts the header fields from the request required
 // by the `headers` parameter in the configuration
 func (s *SignatureParameters) ParseRequest(r *http.Request) error {
-	if len(s.Headers) == 0 {
+	if len(s.HeaderList) == 0 {
 		return errors.New(ErrorNoHeadersConfigLoaded)
 	}
-	for header := range s.Headers {
+	if len(s.HeaderList) > 0 {
+		s.Headers = HeaderValues{}
+	}
+	for _, header := range s.HeaderList {
 		switch header {
 		case "(request-target)":
 			if tl, err := requestTargetLine(r); err == nil {
@@ -133,15 +138,16 @@ func (s *SignatureParameters) parseSignatureString(in string) error {
 			}
 			s.Algorithm = alg
 		} else if key == "headers" {
-			s.Headers.ParseString(value)
+			s.ParseString(value)
 		} else if key == "signature" {
 			s.Signature = value
 		}
 		// ignore unknown parameters
 	}
 
-	if len(s.Headers) == 0 {
-		s.Headers = HeaderList{"date": ""}
+	if len(s.HeaderList) == 0 {
+		s.HeaderList = []string{"date"}
+		s.Headers = HeaderValues{}
 	}
 
 	if len(s.Signature) == 0 {
@@ -167,8 +173,8 @@ func (s SignatureParameters) hTTPSignatureString(signature string) string {
 		s.Algorithm.Name,
 	)
 
-	if len(s.Headers) > 0 {
-		str += fmt.Sprintf(`,headers="%s"`, s.Headers.toHeadersString())
+	if len(s.HeaderList) > 0 {
+		str += fmt.Sprintf(`,headers="%s"`, s.toHeadersString())
 	}
 
 	str += fmt.Sprintf(`,signature="%s"`, signature)
@@ -177,7 +183,7 @@ func (s SignatureParameters) hTTPSignatureString(signature string) string {
 }
 
 func (s SignatureParameters) calculateSignature(keyB64 string) (string, error) {
-	signingString, err := s.Headers.signingString()
+	signingString, err := s.signingString()
 	if err != nil {
 		return "", err
 	}
@@ -196,7 +202,7 @@ func (s SignatureParameters) calculateSignature(keyB64 string) (string, error) {
 
 // Verify verifies this signature for the given base64 encodedkey
 func (s SignatureParameters) Verify(keyBase64 string) (bool, error) {
-	signingString, err := s.Headers.signingString()
+	signingString, err := s.signingString()
 	if err != nil {
 		return false, err
 	}
@@ -220,33 +226,34 @@ func (s SignatureParameters) Verify(keyBase64 string) (bool, error) {
 }
 
 // HeaderList contains headers
-type HeaderList map[string]string
+type HeaderValues map[string]string
 
 // ParseString constructs a headerlist from the 'headers' string
-func (h *HeaderList) ParseString(list string) {
-	*h = HeaderList{}
+func (s *SignatureParameters) ParseString(list string) {
+	if len(list) == 0 {
+		return
+	}
 	list = strings.TrimSpace(list)
 	headers := strings.Split(strings.ToLower(string(list)), " ")
 	for _, header := range headers {
-		// init header map with empty string
-		(*h)[header] = ""
+		s.HeaderList = append(s.HeaderList, header)
 	}
 }
 
-func (h HeaderList) toHeadersString() string {
-	// todo return strings.Join(h, " ")
-	list := ""
-	for header := range h {
-		list += " " + strings.ToLower(header)
+func (s SignatureParameters) toHeadersString() string {
+	var lowerCaseList []string
+	for _, header := range s.HeaderList {
+		lowerCaseList = append(lowerCaseList, strings.ToLower(header))
 	}
-	return list
+
+	return strings.Join(lowerCaseList, " ")
 }
 
-func (h HeaderList) signingString() (string, error) {
+func (s SignatureParameters) signingString() (string, error) {
 	signingList := []string{}
 
-	for header, value := range h {
-		headerString := fmt.Sprintf("%s: %s", header, value)
+	for _, header := range s.HeaderList {
+		headerString := fmt.Sprintf("%s: %s", header, s.Headers[header])
 		signingList = append(signingList, headerString)
 	}
 

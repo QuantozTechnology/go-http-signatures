@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -52,7 +53,7 @@ func TestSignSha1(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, testKeyID, s.KeyID)
 	assert.Equal(t, httpsignatures.AlgorithmHmacSha1, s.Algorithm.Name)
-	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderValues{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 	assert.Equal(t,
 		"06tbjUif0/069JeDM7gWFUOjz04=",
 		s.Signature,
@@ -76,7 +77,7 @@ func TestSignSha256(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, testKeyID, s.KeyID)
 	assert.Equal(t, httpsignatures.AlgorithmHmacSha256, s.Algorithm.Name)
-	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderValues{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 	assert.Equal(t,
 		"QgoCZTOayhvFBl1QLXmFOZIVMXC0Dujs5ODsYVruDPI=",
 		s.Signature,
@@ -101,7 +102,7 @@ func TestValidEd25119RequestIsValid(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, ed25519TestPublicKey, s.KeyID)
 	assert.Equal(t, httpsignatures.AlgorithmEd25519, s.Algorithm.Name)
-	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderValues{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 	assert.Equal(t,
 		ed25519TestSignature,
 		s.Signature,
@@ -123,7 +124,7 @@ func TestSignSha256OmitHeaderLeadingTrailingWhitespace(t *testing.T) {
 	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
-	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderValues{"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 	assert.Equal(t,
 		"QgoCZTOayhvFBl1QLXmFOZIVMXC0Dujs5ODsYVruDPI=",
 		s.Signature,
@@ -147,8 +148,8 @@ func TestSignSha256DoubleHeaderField(t *testing.T) {
 	var s httpsignatures.SignatureParameters
 	err = s.FromRequest(r)
 	assert.Nil(t, err)
-	assert.Equal(t, httpsignatures.HeaderList{"date": "Thu, 05 Jan 2012 21:31:40 GMT",
-		"cache-control": "max-age=60, must-revalidate"}, s.Headers)
+	assert.Equal(t, httpsignatures.HeaderValues{"cache-control": "max-age=60, must-revalidate",
+		"date": "Thu, 05 Jan 2012 21:31:40 GMT"}, s.Headers)
 }
 
 func TestSignWithMissingDateHeader(t *testing.T) {
@@ -270,10 +271,42 @@ func TestVerifyRequiredHeaderList(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha256}, "(request-target)")
-	assert.EqualError(t, err, httpsignatures.ErrorRequiredHeaderNotInHeaderList)
+	assert.EqualError(t, err, httpsignatures.ErrorRequiredHeaderNotInHeaderList+": '(request-target)'")
 	httpErr, _ := httpsignatures.ErrorToHTTPCode(err.Error())
 	assert.Equal(t, http.StatusBadRequest, httpErr)
 
 	_, err = httpsignatures.VerifyRequest(r, keyLookUp, -1, []string{httpsignatures.AlgorithmHmacSha256}, "date")
+	assert.Nil(t, err)
+}
+
+// Complete test:
+func TestCompleteFunctionality(t *testing.T) {
+	keyLookUpProp := func(keyID string) (string, error) {
+		return keyID, nil
+	}
+
+	editRequestFunc := func(r *http.Request) {
+		r.Host = "localhost"
+		r.Header["Date"] = []string{time.Now().UTC().Format(time.RFC1123)}
+
+		signer := httpsignatures.NewSigner("ed25519", "(request-target)", "host", "date")
+
+		err := signer.SignRequest(r, ed25519TestPublicKey, ed25519TestPrivateKey)
+		assert.Nil(t, err)
+
+	}
+
+	r := &http.Request{
+		Header: http.Header{},
+		Method: http.MethodGet,
+		URL: &url.URL{
+			Host: "localhost:8000",
+			Path: "/",
+		},
+	}
+
+	editRequestFunc(r)
+
+	_, err := httpsignatures.VerifyRequest(r, keyLookUpProp, -1, []string{httpsignatures.AlgorithmEd25519}, "(request-target)", "host", "date")
 	assert.Nil(t, err)
 }
