@@ -91,17 +91,21 @@ func VerifyRequest(r *http.Request, keyLookUp func(keyID string) (string, error)
 			return false, errors.New(ErrorYouProbablyMisconfiguredAllowedClockSkew)
 		}
 		// check if difference between date and date.Now exceeds allowedClockSkew
-		if date := sig.Headers["date"]; len(date) != 0 {
-			if hdrDate, err := time.Parse(time.RFC1123, date); err == nil {
-				if (int)(time.Since(hdrDate).Seconds()) > (allowedClockSkew) {
-					return false, errors.New(ErrorAllowedClockskewExceeded)
-				}
-			} else {
-				return false, err
-			}
-
+		var date string
+		// if 'X-Date' header exists, prefer this header above 'Date'
+		if d := sig.Headers["x-date"]; len(d) != 0 {
+			date = d
+		} else if d := sig.Headers["date"]; len(d) != 0 {
+			date = d
 		} else {
 			return false, errors.New(ErrorDateHeaderIsMissingForClockSkewComparison)
+		}
+		if hdrDate, err := time.Parse(time.RFC1123, date); err == nil {
+			if (int)(time.Since(hdrDate).Seconds()) > (allowedClockSkew) {
+				return false, errors.New(ErrorAllowedClockskewExceeded)
+			}
+		} else {
+			return false, err
 		}
 	}
 	key, err := keyLookUp(sig.KeyID)
