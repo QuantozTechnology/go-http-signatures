@@ -22,6 +22,7 @@ type SignatureParameters struct {
 const (
 	HeaderRequestTarget string = "(request-target)"
 	HeaderDate          string = "date"
+	HeaderXDate         string = "x-date"
 	HeaderHost          string = "host"
 )
 

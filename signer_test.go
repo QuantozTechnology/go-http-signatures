@@ -261,6 +261,30 @@ func TestNotValidIfClockSkewExceeded(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, httpErr)
 }
 
+func TestNotValidIfClockSkewExceededXDate(t *testing.T) {
+	allowedClockSkew := 300
+	duration, err := time.ParseDuration(fmt.Sprintf("-%ds", allowedClockSkew))
+	assert.Nil(t, err)
+	r := &http.Request{
+		Header: http.Header{
+			"X-Date": []string{time.Now().Add(duration).Format(time.RFC1123)},
+		},
+	}
+	signer := httpsignatures.NewSigner("ed25519", "x-date")
+	err = signer.SignRequest(r, ed25519TestPublicKey, ed25519TestPrivateKey)
+	assert.Nil(t, err)
+
+	keyLookUpProp := func(keyID string) (string, error) {
+		return keyID, nil
+	}
+
+	_, err = httpsignatures.VerifyRequest(r, keyLookUpProp, allowedClockSkew, []string{httpsignatures.AlgorithmEd25519})
+	assert.Nil(t, err)
+
+	_, err = httpsignatures.VerifyRequest(r, keyLookUpProp, allowedClockSkew-1, []string{httpsignatures.AlgorithmEd25519})
+	assert.EqualError(t, err, httpsignatures.ErrorAllowedClockskewExceeded)
+}
+
 func TestVerifyRequiredHeaderList(t *testing.T) {
 	r := &http.Request{
 		Header: http.Header{
