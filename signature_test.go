@@ -169,6 +169,56 @@ func TestRequestParserMissingDateHeader(t *testing.T) {
 	assert.Equal(t, sigParam, s)
 }
 
+func TestRequestParserTestURLVersions(t *testing.T) {
+	const authHeader string = `keyId="Test",algorithm="hmac-sha256",signature="fffff",headers="(request-target) host"`
+	u, err := url.Parse("https://www.example.com/foo?param=value&pet=dog#bar")
+	assert.Nil(t, err)
+	r := &http.Request{
+		Header: http.Header{
+			"Date":          []string{testDate},
+			"Authorization": []string{authHeader},
+		},
+		Method: http.MethodPost,
+		Host:   "example.com",
+		URL:    u,
+	}
+
+	var s SignatureParameters
+	err = s.FromRequest(r)
+	assert.Nil(t, err)
+	sigParam := SignatureParameters{KeyID: "Test", Algorithm: algorithmHmacSha256,
+		Headers:   HeaderValues{"(request-target)": "post /foo?param=value&pet=dog#bar", "host": "example.com"},
+		Signature: "fffff", HeaderList: []string{"(request-target)", "host"}}
+	assert.Equal(t, sigParam, s)
+
+	r.URL, err = url.Parse("https://www.example.com/foo?param=value&pet=dog")
+	assert.Nil(t, err)
+	err = s.FromRequest(r)
+	assert.Nil(t, err)
+	sigParam = SignatureParameters{KeyID: "Test", Algorithm: algorithmHmacSha256,
+		Headers:   HeaderValues{"(request-target)": "post /foo?param=value&pet=dog", "host": "example.com"},
+		Signature: "fffff", HeaderList: []string{"(request-target)", "host"}}
+	assert.Equal(t, sigParam, s)
+
+	r.URL, err = url.Parse("https://www.example.com/foo?param=value#bar")
+	assert.Nil(t, err)
+	err = s.FromRequest(r)
+	assert.Nil(t, err)
+	sigParam = SignatureParameters{KeyID: "Test", Algorithm: algorithmHmacSha256,
+		Headers:   HeaderValues{"(request-target)": "post /foo?param=value#bar", "host": "example.com"},
+		Signature: "fffff", HeaderList: []string{"(request-target)", "host"}}
+	assert.Equal(t, sigParam, s)
+
+	r.URL, err = url.Parse("https://www.example.com/foo")
+	assert.Nil(t, err)
+	err = s.FromRequest(r)
+	assert.Nil(t, err)
+	sigParam = SignatureParameters{KeyID: "Test", Algorithm: algorithmHmacSha256,
+		Headers:   HeaderValues{"(request-target)": "post /foo", "host": "example.com"},
+		Signature: "fffff", HeaderList: []string{"(request-target)", "host"}}
+	assert.Equal(t, sigParam, s)
+}
+
 func TestRequestParserInvalidKeyShouldBeIgnored(t *testing.T) {
 	const authHeader string = `Signature keyId="Test",algorithm="hmac-sha256",
 		garbage="bob",signature="fffff"`
