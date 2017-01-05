@@ -58,8 +58,8 @@ func (app *App) Authenticator(c *web.C, h http.Handler) http.Handler {
 
 func verifyRequest(r *http.Request) error {
 	keyLookUp := func(keyId string) (string, error) {
-		// returns the key to verify the signature
-    return keyLookUpFun(keyId)
+		// returns the base64string encoded key to verify the signature
+		return keyLookUpFun(keyId)
 	}
 
 	allowedClockSkew := -1
