@@ -270,8 +270,10 @@ func requestTargetLine(req *http.Request) (string, error) {
 	}
 
 	path := req.URL.Path
+	query := req.URL.RawQuery
+	fragment := req.URL.Fragment
 	method := strings.ToLower(req.Method)
-	return fmt.Sprintf("%s %s", method, path), nil
+	return fmt.Sprintf("%s %s?%s#%s", method, path, query, fragment), nil
 }
 
 func headerLine(req *http.Request, header string) (string, error) {

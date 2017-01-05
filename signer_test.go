@@ -320,17 +320,16 @@ func TestCompleteFunctionality(t *testing.T) {
 
 	}
 
+	u, err := url.Parse("https://www.example.com/foo?param=value&pet=dog")
+	assert.Nil(t, err)
 	r := &http.Request{
 		Header: http.Header{},
 		Method: http.MethodGet,
-		URL: &url.URL{
-			Host: "localhost:8000",
-			Path: "/",
-		},
+		URL:    u,
 	}
 
 	editRequestFunc(r)
 
-	_, err := httpsignatures.VerifyRequest(r, keyLookUpProp, -1, []string{httpsignatures.AlgorithmEd25519}, "(request-target)", "host", "date")
+	_, err = httpsignatures.VerifyRequest(r, keyLookUpProp, -1, []string{httpsignatures.AlgorithmEd25519}, "(request-target)", "host", "date")
 	assert.Nil(t, err)
 }
